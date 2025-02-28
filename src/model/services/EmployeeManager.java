@@ -1,8 +1,12 @@
 package model.services;
 
 import model.dataAccess.EmployeeRepository;
+import model.dataAccess.RepositoriesProvider;
 import model.enteties.employee.Employee;
+import model.enteties.employee.EmployeeAttributes;
+import model.enteties.fleet.vehicle.attributes.VehicleType;
 import model.validator.UserInputValidator;
+import views.ChoiceEmployeeFilterDialog;
 import views.ChoiceMenuView;
 import views.UpdateEmplyeeDialogView;
 import views.WaitAnyKeyDialogView;
@@ -18,13 +22,10 @@ public class EmployeeManager {
     private ArrayList<Employee> employeeList;
     private final EmployeeRepository employeeRepository;
 
-    public ArrayList<Employee> getEmployeeList() {
-        return employeeList;
-    }
 
 
-    public EmployeeManager(EmployeeRepository employeeRepository) {
-        this.employeeRepository = employeeRepository;
+    public EmployeeManager(RepositoriesProvider repositoriesProvider) {
+        this.employeeRepository = repositoriesProvider.getEmployeeRepository();
         this.employeeList = this.employeeRepository.selectEmployeesFromTable();
     }
 
@@ -138,86 +139,36 @@ public class EmployeeManager {
             throw new NullPointerException("EmployeeList wurde nicht gefüllt");
         }
 
-
-        String[] filterChoiceList = {"Vorname", "Nachname", "Position", "Postleitzahl", "Ort"};
-        String filterValue;
-        int filterChoice = ChoiceMenuView.BuildChoiceMenu(
-                "Nach welchem Wert wollen Sie filtern?", filterChoiceList, scanner);
-
         ArrayList<Employee> filteredEmployees = new ArrayList<>();
 
-        switch (filterChoice) {
-            case 1:
-                filterValue = UserInputItemView.inputItemNoExit(
-                        "Geben Sie einen Vornamen ein",
-                        "",
-                        UserInputValidator::isName,
-                        scanner);
+        var filter = ChoiceEmployeeFilterDialog.choseFilter(scanner);
 
-                //adding the Strings to objectList
-                filteredEmployees = applyFilter(filterValue, Employee::getFirstname);
+        switch (filter.getEmployeeAttribute()) {
+            case EmployeeAttributes.FIRSTNAME:
+                filteredEmployees = applyFilter(filter.getFilter(), Employee::getFirstname);
                 break;
-            case 2:
-                filterValue = UserInputItemView.inputItemNoExit("Geben Sie einen Nachnamen ein",
-                        "",
-                        UserInputValidator::isName,
-                        scanner);
-                //adding the Strings to objectList
-                for (Employee employee : this.employeeList) {
-                    if (employee.getLastname().contains(filterValue)) {
-                        filteredEmployees.add(employee);
-                    }
-                }
+            case EmployeeAttributes.LASTNAME:
+                filteredEmployees = applyFilter(filter.getFilter(), Employee::getLastname);
                 break;
-            case 3:
-                filterValue = UserInputItemView.inputItemNoExit("Geben Sie eine Position ein",
-                        "",
-                        UserInputValidator::isName,
-                        scanner);
-                //adding the Strings to objectList
-                for (Employee employee : this.employeeList) {
-                    if (employee.getPosition().contains(filterValue)) {
-                        filteredEmployees.add(employee);
-                    }
-                }
+            case EmployeeAttributes.POSITION:
+                filteredEmployees = applyFilter(filter.getFilter(), Employee::getPosition);
                 break;
-            case 4:
-                filterValue = UserInputItemView.inputItemNoExit("Geben Sie eine Postleitzahl ein",
-                        "",
-                        UserInputValidator::isAustrianPostCode,
-                        scanner);
-                //adding the Strings to objectList
-                for (Employee employee : this.employeeList) {
-                    if (employee.getPostcode().contains(filterValue)) {
-                        filteredEmployees.add(employee);
-                    }
-                }
+            case EmployeeAttributes.POSTCODE:
+                filteredEmployees = applyFilter(filter.getFilter(), Employee::getPostcode);
                 break;
-            case 5:
-                filterValue = UserInputItemView.inputItemNoExit("Geben Sie einen Ort ein",
-                        "",
-                        UserInputValidator::isNameWithPoint,
-                        scanner);
-                //adding the Strings to objectList
-                for (Employee employee : this.employeeList) {
-                    if (employee.getCity().contains(filterValue)) {
-                        filteredEmployees.add(employee);
-                    }
-                }
-                break;
-            case 6:
+            case EmployeeAttributes.CITY:
+                filteredEmployees = applyFilter(filter.getFilter(), Employee::getPostcode);
+            case EmployeeAttributes.FLEETACCESS:
                 boolean filterBool = ChoiceMenuView.askYesNo(
                         "Wollen Sie die Mitarbeiter mit Fuhrpark-Zugriff herausfiltern?", scanner);
                 //adding the Strings to objectList
-                for (Employee employee : this.employeeList) {
-                    if (employee.isFleetAccess() == filterBool) {
-                        filteredEmployees.add(employee);
-                    }
-                }
+                if(filterBool)
+                    filteredEmployees = getEmployeesWithFleetAccess();
                 break;
         }
         return filteredEmployees;
     }
+
 
     public void updateEmployeeFleetAccess(Scanner scanner) {
 
@@ -273,5 +224,16 @@ public class EmployeeManager {
             }
         }
         return filteredEmployees;
+    }
+
+    public ArrayList<Employee> getEmployeesWithFleetAccess() {
+        ArrayList<Employee> employeesWithFleetAccess = new ArrayList<>();
+
+        for (Employee employee : this.employeeList) {
+            if (employee.isFleetAccess()) {
+                employeesWithFleetAccess.add(employee);
+            }
+        }
+        return employeesWithFleetAccess;
     }
 }

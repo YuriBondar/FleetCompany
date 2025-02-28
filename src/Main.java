@@ -8,19 +8,13 @@ public class Main {
     public static void main(String[] args) {
 
         DatabaseConfigurator databaseConfigurator = new DatabaseConfigurator();
-        DatabaseConnector databaseConnector = new DatabaseConnector(databaseConfigurator);
 
-        EmployeeRepository employeeRepository = new EmployeeRepository(databaseConnector);
-        FleetRepository fleetRepository = new FleetRepository(databaseConnector);
-        DriverAssignmentRepository driverAssignmentRepository = new DriverAssignmentRepository(databaseConnector);
+        RepositoriesProvider repositoriesProvider = new RepositoriesProvider(databaseConfigurator);
 
-        VehicleMaintenanceManager vehicleMaintenanceManager = new VehicleMaintenanceManager(fleetRepository);
-        EmployeeManager employeeManager = new EmployeeManager(employeeRepository);
-        FleetManager fleetManager =
-                new FleetManager(
-                fleetRepository,
-                vehicleMaintenanceManager,
-                driverAssignmentRepository);
+
+        VehicleMaintenanceManager vehicleMaintenanceManager = new VehicleMaintenanceManager(repositoriesProvider);
+        EmployeeManager employeeManager = new EmployeeManager(repositoriesProvider);
+        FleetManager fleetManager = new FleetManager(repositoriesProvider, vehicleMaintenanceManager);
 
         MainMenuController mainMenuController = new MainMenuController(fleetManager, employeeManager);
         mainMenuController.buildMainMenu();

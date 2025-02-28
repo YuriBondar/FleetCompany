@@ -1,6 +1,7 @@
 package model.services;
 
 import model.dataAccess.FleetRepository;
+import model.dataAccess.RepositoriesProvider;
 import model.enteties.fleet.vehicle.Bike;
 import model.enteties.fleet.vehicle.MotorVehicle;
 import model.enteties.fleet.vehicle.Vehicle;
@@ -19,9 +20,9 @@ public class VehicleMaintenanceManager {
 
     private  FleetRepository fleetRepository;
 
-    public VehicleMaintenanceManager(FleetRepository fleetRepository) {
+    public VehicleMaintenanceManager(RepositoriesProvider repositoriesProvider) {
 
-        this.fleetRepository = fleetRepository;
+        this.fleetRepository = repositoriesProvider.getFleetRepository();
     }
 
 

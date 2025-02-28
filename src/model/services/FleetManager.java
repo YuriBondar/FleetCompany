@@ -2,14 +2,12 @@ package model.services;
 
 import model.dataAccess.DriverAssignmentRepository;
 import model.dataAccess.FleetRepository;
-import model.enteties.employee.Employee;
-import model.enteties.fleet.driverassignment.DriverAssignment;
+import model.dataAccess.RepositoriesProvider;
 import model.enteties.fleet.vehicle.attributes.VehicleType;
 import model.enteties.fleet.vehicleMaintenance.VehicleService;
 import model.enteties.fleet.vehicle.*;
 import views.ChoiceMenuView;
 import views.ChoseVehicleTypeMenuDialog;
-import views.WaitAnyKeyDialogView;
 import views.inputViews.InputVehicleView;
 
 import java.time.LocalDate;
@@ -22,17 +20,23 @@ public class FleetManager {
     private ArrayList<Vehicle> vehicleList;
 
     FleetRepository fleetRepository;
-    VehicleMaintenanceManager vehicleMaintenanceManager;
     DriverAssignmentRepository driverAssignmentRepository;
 
+    VehicleMaintenanceManager vehicleMaintenanceManager;
+    DriverAssignmentManager driverAssignmentManager;
 
-    public FleetManager(FleetRepository fleetRepository,
-                        VehicleMaintenanceManager vehicleMaintenanceManager,
-                        DriverAssignmentRepository driverAssignmentRepository) {
-        this.fleetRepository = fleetRepository;
+
+    public FleetManager(RepositoriesProvider repositoriesProvider,
+                        VehicleMaintenanceManager vehicleMaintenanceManager) {
+        this.fleetRepository = repositoriesProvider.getFleetRepository();
         this.vehicleMaintenanceManager = vehicleMaintenanceManager;
-        this.driverAssignmentRepository = driverAssignmentRepository;
+
+        this.driverAssignmentRepository = repositoriesProvider.getDriverAssignmentRepository();
+
         this.vehicleList = this.fleetRepository.selectAllVehicles();
+
+        this.driverAssignmentManager = new DriverAssignmentManager(this.driverAssignmentRepository);
+
     }
 
 
@@ -93,6 +97,7 @@ public class FleetManager {
         //returning the chosen Vehicle
         return (T) this.vehicleList.get(vehicleChoice - 1);
     }
+
 
 
     //Method for deleting specific Vehicle in the vehicleList
@@ -207,79 +212,10 @@ public class FleetManager {
             EmployeeManager employeeManager,
             Scanner scanner) {
 
+        driverAssignmentManager.updateVehicleDriver(chosenMotorVehicle, employeeManager, scanner);
 
-        // find employees, that have access to fleet
-        ArrayList<Employee> employeesWithAccess = new ArrayList<>();
-        for (Employee employee : employeeManager.getEmployeeList()) {
-            if (employee.isFleetAccess()) {
-                employeesWithAccess.add(employee);
-            }
-        }
-
-        // check if any employee has access to fleet
-        if (employeesWithAccess.isEmpty()) {
-            System.out.println("Es gibt keine Mitarbeiter mit Zugang zum Fuhrpark.");
-            return;
-        }
-
-        // select all assignments from database for chosen vehicle
-        ArrayList<DriverAssignment> assignmentsChosenVehicle = driverAssignmentRepository.
-                selectDriverAssignmentsByVehicleID(chosenMotorVehicle.getNatCode());
-
-        DriverAssignment openedAssignment = null;
-        Employee chosenEmployee;
-
-        // chose employee for a new assignment
-        // and check if chosen vehicle does not have already assignment to chosen emplyee
-        while (true) {
-            // choose employee to assign access
-            chosenEmployee = employeeManager.chooseEmployee(employeesWithAccess, scanner);
-
-            for (DriverAssignment driverAssignment : assignmentsChosenVehicle) {
-                // looking for opened driverAssignment
-                if (driverAssignment.getEndDate() == null)
-                    openedAssignment = driverAssignment;
-            }
-
-            if (openedAssignment != null && openedAssignment.getEmployeeID() == chosenEmployee.getEmployeeID())
-            {
-                //if vehicle is assigned to selected driver repeat loop or finish method
-                if (ChoiceMenuView
-                        .askYesNo("Dieses Fahrzeug ist bereits diesem Fahrer zugewiesen. " +
-                                "Möchten Sie einen anderen Fahrer auswählen?", scanner)) {
-                    continue;
-                }
-                else
-                    return;
-            }
-            else
-                break;
-        }
-
-        // if chosen vehicle already has assignment close it up
-        if (openedAssignment != null) {
-            openedAssignment.setEndDate(LocalDate.now());
-            this.driverAssignmentRepository.updateDriverAssignment(openedAssignment);
-        }
-
-        DriverAssignment newAssignment =
-                createNewDriverAssignment(chosenEmployee.getEmployeeID(), chosenMotorVehicle.getNatCode());
-
-        driverAssignmentRepository.addNewDriverAssignment(newAssignment);
-
-        System.out.println("Der Fahrer wurde erfolgreich aktualisiert.");
-        WaitAnyKeyDialogView.waitForAnyKey(scanner);
     }
 
-
-
-    public DriverAssignment createNewDriverAssignment(int imployeeId, String vehicleNatCode) {
-
-        return new DriverAssignment(
-                imployeeId,
-                vehicleNatCode,
-                LocalDate.now());
-    }
 
     public VehicleType defineVehicleType(Vehicle vehicle) {
 

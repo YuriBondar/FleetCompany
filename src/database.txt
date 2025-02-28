@@ -1,0 +1,48 @@
+create database fleetCompanyDB;
+
+use fleetCompanyDB;
+
+create table vehicles(
+	vehicleID varchar(6) primary key,
+    vehicleType varchar(20),
+    brand varchar(100),
+    model varchar(100),
+    licenseplate varchar(20),
+    fuelType varchar(50),
+    mileage int,
+    fuelUsage int,
+    seats int,
+    transportVolume int
+);
+
+create table employees(
+	employeeID int primary key,
+    firstname varchar(100),
+    lastname varchar(100),
+    position varchar(100),
+    socialsecuritynumber varchar(10),
+    birthday date,
+    streetname varchar(100),
+    houseNr varchar(50),
+    postcode varchar(4),
+    city varchar(100),
+    fleetAccess boolean
+);
+
+create table services(
+	serviceID int primary key auto_increment,
+    vehicleID varchar(6),
+    serviceDate date,
+    mileage int,
+    constraint fk_vehicleIDServices foreign key (vehicleID) references vehicles(vehicleID) on delete cascade
+);
+
+create table driverAssignments (
+	driverAssignmentID int primary key auto_increment,
+    employeeID int,
+    vehicleID varchar(6),
+    startDate date,
+    endDate date,
+	constraint fk_employeeID foreign key (employeeID) references employees(employeeID) on delete cascade,
+    constraint fk_vehicleIDAssignments foreign key (vehicleID) references vehicles(vehicleID) on delete cascade
+);
